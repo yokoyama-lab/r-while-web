@@ -1,0 +1,17 @@
+(*
+  INPUT: X, Y where X > Y
+*)
+
+macro MINUS(X,Y)
+  from  =? Y' nil
+  loop  cons nil X <= X;
+        cons nil Y <= Y;
+        Y' <= cons nil Y'
+  until =? Y nil;
+  Y <= Y'
+
+read Z;
+  cons X Y <= Z;
+  MINUS(X,Y);
+  Z <= cons X Y;
+write Z

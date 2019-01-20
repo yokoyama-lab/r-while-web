@@ -1,0 +1,14 @@
+(* length2 *)
+macro SUB(X,X',N,T)
+  from  =? X' nil
+  loop  N <= cons nil N;
+        cons T X <= X;
+        X' <= cons T X'
+  until =? X nil
+
+read X;
+  SUB(X,X',N,T);
+  N' ^= N;
+  INV-SUB(X,X',N,T);
+  X <= cons X N';
+write X

@@ -1,0 +1,13 @@
+read X0;
+  from  =? X nil
+  do    if =? S nil then
+          X ^= (nil.nil)
+        fi =? S nil
+  loop  if =? FORWARD nil then
+          S <= cons nil S
+        else
+          cons nil S <= S
+        fi =? FORWARD nil
+  until =? X nil;
+  FORWARD ^= (nil.nil);
+write X0

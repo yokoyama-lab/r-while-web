@@ -1,0 +1,25 @@
+macro LOOKUP(Vl,J,X)
+  AUX(Vl,J,X,T);
+  X ^= T;
+  INV-AUX(Vl,J,X,T)   (* clear T *)
+
+macro UPDATE(Vl,J,X)
+  AUX(Vl,J,X,T);
+  T ^= X;
+  INV-AUX(Vl,J,X,T)   (* clear T *)
+
+macro AUX(Vl,J,X,T)
+  from (=? JJ Nil) loop
+    cons U Vl <= Vl;
+    Vr <= cons U Vr;
+    JJ <= cons nil JJ  (* JJ := JJ + 1 *)
+  until (=? JJ J);
+  cons T Vl <= Vl
+
+read X;
+  Vl ^= ('00.('11.('22.nil)));
+  J ^= (nil.(nil.nil));
+  LOOKUP(Vl,J,X);
+  J ^= (nil.(nil.nil));
+  Vl ^= ('00.('11.('22.nil)));
+write X

@@ -1,0 +1,38 @@
+(* 
+  COMPARE(X,Y,R') compares the length of a pair of two lists X and Y, and
+  sets R' to nil             if #X < #Y
+             (nil.nil)       if #X = #Y
+             (nil.(nil.nil)) if #X > #Y
+ *)
+macro COMPARE2(X,Y,X',Y',F,R)
+  from  =? X' nil
+  do    if =? X nil then
+	  if =? Y nil then
+            F ^= (nil.nil);
+	    R ^= (nil.nil)
+          else
+            F ^= (nil.nil);
+	    R ^= nil
+	  fi =? Y nil
+        else
+	  if =? Y nil then
+            F ^= (nil.nil);
+	    R ^= (nil.(nil.nil))
+	  fi =? Y nil
+	fi =? X nil
+  loop  cons T X <= X;
+        X' <= cons T X';
+	cons T Y <= Y;
+        Y' <= cons T Y'
+  until =? F (nil.nil)
+
+macro COMPARE(X,Y,R')
+  COMPARE2(X,Y,X',Y',F,R);
+  R' ^= R;
+  INV-COMPARE2(X,Y,X',Y',F,R)
+
+read X;
+  cons X Y <= X;
+  COMPARE(X,Y,R');
+  X <= cons (cons X Y) R';
+write X

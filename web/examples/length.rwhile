@@ -1,0 +1,16 @@
+(* length *)
+(* Given a list X of length N, return (X.N) *)
+read X;
+  from  =? X' nil
+  loop  N <= cons nil N;
+        cons T X <= X;
+        X' <= cons T X'
+  until =? X nil;
+
+  (* reverse X *)
+  from  =? X nil
+  loop  cons T X' <= X';
+        X <= cons T X
+  until =? X' nil;
+  X <= cons X N;
+write X

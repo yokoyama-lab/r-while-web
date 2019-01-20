@@ -1,0 +1,95 @@
+(* perm-to-code *)
+
+macro LOOKUP(Vl,J,X)
+  AUX(Vl,J,Y);
+  X ^= Y;
+  INV-AUX(Vl,J,Y)   (* clear T *)
+
+macro UPDATE(Vl,J,X)
+  AUX(Vl,J,Y);
+  Y ^= X;
+  INV-AUX(Vl,J,Y)   (* clear T *)
+
+macro AUX(Vl,J,X)
+  from (=? JJ nil) loop
+    cons U Vl <= Vl;
+    Vr <= cons U Vr;
+    JJ <= cons nil JJ  (* JJ := JJ + 1 *)
+  until (=? JJ J);
+  cons Y T <= Vl
+
+macro LENGTH(X)
+  from  =? X' nil
+  loop  N <= cons nil N;
+        cons T X <= X;
+        X' <= cons T X'
+  until =? X nil;
+
+  from  =? X nil
+  loop  cons T X' <= X';
+        X <= cons T X
+  until =? X' nil;
+  X <= cons X N
+
+macro COMPARE2(X,Y,X',Y',F,R)
+  from  =? X' nil
+  do    if =? X nil then
+	  if =? Y nil then
+            F ^= (nil.nil);
+	    R ^= (nil.nil)
+          else
+            F ^= (nil.nil);
+	    R ^= nil
+	  fi =? Y nil
+        else
+	  if =? Y nil then
+            F ^= (nil.nil);
+	    R ^= (nil.(nil.nil))
+	  fi =? Y nil
+	fi =? X nil
+  loop  cons T X <= X;
+        X' <= cons T X';
+	cons T Y <= Y;
+        Y' <= cons T Y'
+  until =? F (nil.nil)
+
+macro COMPARE(X,Y,R')
+  COMPARE2(X,Y,X',Y',F,R);
+  R' ^= R;
+  INV-COMPARE2(X,Y,X',Y',F,R)
+
+macro MINUS(X,Y)
+  from  =? Y' nil
+  loop  cons nil X <= X;
+        cons nil Y <= Y;
+        Y' <= cons nil Y'
+  until =? Y nil;
+  Y <= Y'
+
+read X;
+  LENGTH(X);
+  cons X N <= X;
+  K ^= N;
+  from  =? K N
+  loop  cons nil K <= K;
+        from  =? J nil
+	loop  LOOKUP(X,J,XJ);
+              LOOKUP(X,K,XK);
+	      COMPARE(XJ,XK,R');
+	      if =? R' (nil.(nil.nil)) then
+                INV-COMPARE(XJ,XK,R');
+                UPDATE(X,J,XJ);
+                cons nil XJ <= XJ;
+                INV-UPDATE(X,J,XJ);
+                COMPARE(XJ,XK,R')
+	      fi =? (=? R' nil) nil;
+              INV-COMPARE(XJ,XK,R');
+	      INV-LOOKUP(X,K,XK);
+              INV-LOOKUP(X,J,XJ);
+              J <= cons nil J
+	until =? J K;
+        MINUS(J,K)
+  until =? K nil;
+  X <= cons X N;
+  LENGTH(X);
+write X

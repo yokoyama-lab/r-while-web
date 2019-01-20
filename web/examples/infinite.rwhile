@@ -1,0 +1,14 @@
+(* A non-terminating example *)
+read X0;
+  FORWARD ^= (nil.nil);  (* A flag for direction *)
+  from  =? X nil
+  do    if =? S nil then (* X is set to true (nil.nil) in both directions *)
+          X ^= (nil.nil)
+        fi =? S nil
+  loop  if =? FORWARD nil then   (* nil is pused onto S in both directions  *)
+          cons nil S <= S
+        else
+          S <= cons nil S
+        fi =? FORWARD nil
+  until =? X nil;
+write X0

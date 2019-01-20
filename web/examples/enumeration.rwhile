@@ -1,0 +1,56 @@
+(* Reversible enumeration ver.161107 *)
+(* cf. Jones p.80 Section 5.7 *)
+(* cf. http://tetsuo.jp/rwhile-playground/
+       /Users/a/Documents/GitHub/rwhile-C-ocaml *)
+
+(* Execution time is proportional to the length of X *)
+macro LAST(X,LE)
+  from  =? Tmp2 nil
+  loop  cons Tmp1 X <= X;
+        Tmp2 <= cons Tmp1 Tmp2
+  until =? X nil;
+  cons LE Tmp2 <= Tmp2;
+  from  =? X nil
+  loop  cons Tmp1 Tmp2 <= Tmp2;
+        X <= cons Tmp1 X
+  until =? Tmp2 nil
+
+(* Refer to Jones p.80 *)
+(* Program start *)
+macro START(L,N,New)
+  L ^= nil;
+  N ^= cons 'a nil;
+  New ^= nil
+
+(* Program next *)
+macro NEXT(N,New,L)
+  LAST(N,New);
+  Old ^= L;
+  Tmp2 ^= cons New New;
+  from  =? Old L
+  loop  (cons OldHd Old) <= Old;  (* Old := tl Old *)
+        Tmp ^= cons New OldHd;
+        N <= cons Tmp N;
+        Tmp ^= cons OldHd New;
+        N <= cons Tmp N;
+        OldHd ^= hd (hd N)        (* clear OldHd *)
+  until =? Old nil;
+  N <= cons Tmp2 N;               (* clear Tmp2 *)
+  show New;
+  L <= (cons New L)               (* clear New *)
+
+(* Initially, N only contains 'a, and L contains nothing. Every time next is performed, the oldest element in N is moved to the variable New.  All the elements in L are paired with New and saved in N.  New is moved in L. *)
+
+read X;
+  START(L,N,New);
+  NEXT(N,New,L);
+  NEXT(N,New,L);
+  NEXT(N,New,L);
+  NEXT(N,New,L);
+  NEXT(N,New,L);
+  NEXT(N,New,L);
+  NEXT(N,New,L);
+  NEXT(N,New,L);
+  NEXT(N,New,L);
+  X <= cons L (cons N New);
+write X

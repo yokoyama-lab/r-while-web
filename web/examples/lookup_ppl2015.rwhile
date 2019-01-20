@@ -1,0 +1,39 @@
+(* Fig.8, p.11
+ * Tetsuo Yokoyama, Robert Glück, A Linear-Time Reversible Self-Interpreter, PPL2015.
+ * http://www-kb.is.s.u-tokyo.ac.jp/ppl2015/programme/
+ *)
+
+macro LOOKUP(Vl,J,X)
+  AUX(Vl,J,X,T);
+  X ^= T;
+  INV-AUX(Vl,J,X,T)   (* clear T *)
+
+macro UPDATE(Vl,J,X)
+  AUX(Vl,J,X,T);
+  T ^= X;
+  INV-AUX(Vl,J,X,T)   (* clear T *)
+
+macro SET-UV(U,V,K,J)
+  U ^= (=? K Nil);
+  V ^= (=? K J)
+
+(* In the workshop paper, there are two typos. *)
+macro AUX(Vl,J,X,T)
+  SET-UV(U,V,K,J);
+  from U loop
+    INV-SET-UV(U,V,K,J);
+    T ^= hd Vl; U ^= tl Vl; Vl ^= cons T U; Vl ^= U; U ^= Vl;
+    U ^= cons T Vr; T ^= hd U; Vr ^= tl U; Vr ^= U; U ^= Vr;
+    U ^= cons nil K; K ^= tl U; K ^= U; U ^= K;   (* K := K + 1 *)
+    SET-UV(U,V,K,J)
+  until V;
+  SET-UV(U,V,K,J);               (* clear U and V *)
+  T ^= hd Vl; U ^= tl Vl; Vl ^= cons T U
+
+read X;
+  Vl ^= ('00.('11.('22.nil)));
+  J ^= (nil.nil);
+  LOOKUP(Vl,J,X);
+  J ^= (nil.nil);
+  Vl ^= ('00.('11.('22.nil)));
+write X
