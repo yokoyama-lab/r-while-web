@@ -112,7 +112,7 @@ if ($example == 1) {
     </nav>
 
     <div class="modal fade" id="option" tabindex="-1" role="dialog" aria-labelledby="option" aria-hidden="true">
-      <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
             <h3 class="modal-title" id="exampleModalLabel">Options</h3>
@@ -176,6 +176,7 @@ if ($example == 1) {
               var editor1 = ace.edit("code");
               var js_var = $('#rwhile-code').val();
               editor1.getSession().setUseWrapMode(true);
+              editor1.getSession().setMode("ace/mode/c_cpp");
               editor1.setFontSize(14);
               editor1.setTheme("ace/theme/tommorow");
               editor1.setValue(js_var,-1);
@@ -199,6 +200,7 @@ if ($example == 1) {
               var editor2 = ace.edit("data");
               editor2.setFontSize(14);
               editor2.setTheme("ace/theme/tommorow");
+              editor2.getSession().setMode("ace/mode/c_cpp");
               editor2.getSession().setUseWrapMode(true);
               editor2.setValue(js_var,-1)
               var value2;
