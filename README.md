@@ -1,5 +1,8 @@
 # rwhile-C-OCaml
-An R-WHILE interpreter in OCaml
+R-WHILEのオンラインインタプリタ
+
+テキストハイライト機能は未完成
+aboutの内容を変える必要があるかもしれない
 
 ## Requirements
 + OCaml
