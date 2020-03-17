@@ -1,5 +1,4 @@
-OCAMLC=ocamlfind ocamlc -unsafe-string -g -package extlib -linkpkg
-#OCAMLC=ocamlfind ocamlc -g -package extlib -linkpkg
+OCAMLC=ocamlfind ocamlc -g -package extlib -linkpkg
 #OCAMLC=ocamlfind ocamlopt -warn-error A -package extlib -linkpkg
 
 all: ri
@@ -25,7 +24,7 @@ distclean: clean
 	 	ri
 
 install: ri
-	cp -f ./ri ../web/
+	cp -f ./ri ../public/
 
 test: ri
 	./ri ../examples/rep.rwhile ../examples/list123.val
