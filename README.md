@@ -13,7 +13,7 @@ R-WHILEのオンラインインタプリタ
 ## Linux Ubuntu にてインストール例
 + 本アプリケーションをダウンロード
 ```
-git clone https://github.com/Yoshi0207/RWHILE-Online-Interpreter.git
+git clone https://github.com/yokoyama-lab/r-while-web.git
 ```
 
 + composerをインストール(Laravelに必要)
