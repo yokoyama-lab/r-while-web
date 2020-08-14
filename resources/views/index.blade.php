@@ -131,7 +131,7 @@
               editor1.getSession().setUseWrapMode(true);
               editor1.setFontSize(14);
               editor1.setTheme("ace/theme/tomorrow");
-/*              editor1.getSession().setMode("ace/mode/c_cpp"); */   /* Janus用のmodeが無い */
+              editor1.getSession().setMode("ace/mode/rwhile");
               editor1.setValue(js_var,-1);
               var value1;
               function get_value1_variable(){
@@ -151,6 +151,7 @@
                 var editor2 = ace.edit("data");
                 editor2.setFontSize(14);
                 editor2.setTheme("ace/theme/tomorrow");
+                editor2.getSession().setMode("ace/mode/rwhile");
                 editor2.getSession().setUseWrapMode(true);
                 editor2.setValue(js_var,-1)
                 var value2;
