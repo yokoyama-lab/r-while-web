@@ -4,10 +4,13 @@ RUN apt update \
     && echo 'export LANG=C.UTF-8' >> ~/.bashrc \
     && echo 'export LANGUAGE="C.UTF-8"' >> ~/.bashrc \
 
+    cd /home \
     # opamをインストール
     && apt install -y --no-install-recommends opam \
     && opam init -y --disable-sandboxing \
+    && eval $(opam env) \
     && opam update \
+    && eval $(opam env) \
     && opam switch \
     && eval $(opam env) \
     && opam install -y extlib ocamlfind ocamlyacc \
