@@ -77,7 +77,34 @@ bin/ri                                     make install が置く実行ファイ
 このアプリはデータベースを使わない。セッションとキャッシュはファイルに置く
 （`SESSION_DRIVER=file` / `CACHE_STORE=file`）。
 
-## 本番へ出すとき
+## 本番（tetsuo.jp）
+
+公開先は **https://tetsuo.jp/r-while/**。設置は s1 の `/var/www/apps/r-while-web/`
+（git 管理）で、Apache の `Alias` で `public/` だけを公開している。更新は
+
+```sh
+ssh s1 'sh /var/www/apps/r-while-web/deploy/update.sh'
+```
+
+初回の設置（`Alias` の conf・`ocaml-nox`・所有権）は
+`~/dev/www/tetsuo.jp-conf/r-while-setup.sh` を root で 1 回。
+
+この配置で踏んだ落とし穴（すべて 2026-09-08 に実測）:
+
+- ⚠️ **アプリのルートを配信ツリー（`/var/www/tetsuo.jp/`）の直下に置かない。**
+  Laravel はルート直下に `.env` を置くので、そのままでは
+  `https://…/<アプリ>/.env` が 200 で取得できる。旧設置は実際にそうなっていた。
+  `.htaccess` では塞げない（`apache2.conf` が `AllowOverride None`）。
+- ⚠️ **`php artisan route:cache` を使わない。** `Alias` 配下ではキャッシュした
+  ルートで `GET /` が 405（`allow: HEAD`）になる。`/2` などは 200 のままなので
+  気づきにくい。`route:clear` すれば直る。`config:cache` と `view:cache` は問題ない。
+- ⚠️ **処理系はサーバ上でビルドする。** `ri` は OCaml のバイトコードで、
+  shebang にビルドマシンの `ocamlrun` の絶対パスが焼かれる。手元で作って配ると動かない。
+  加えて `rsync --no-perms`（`~/dev/www/Makefile`）は実行ビットを落とす。
+- s1 で `composer install` は `--prefer-source` を使う。dist（GitHub API）は
+  IP のレート制限に掛かって全パッケージが失敗する。
+
+## 設定の注意
 
 - **`APP_DEBUG=false` と `APP_ENV=production`。** `.env.example` の既定もそうしてある。
   デバッグ表示を有効にしたまま公開すると、Laravel の例外画面から環境変数まで読める。
