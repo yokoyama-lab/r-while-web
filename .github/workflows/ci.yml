@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # R-WHILE の処理系（OCaml）。これが無いと実行系のテストは全部 skip になり、
+      # 「走っていない検査」と「異常なし」の区別がつかなくなる。
+      - name: OCaml と BNFC を入れる
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ocaml ocaml-findlib libextlib-ocaml-dev bnfc
+
+      - name: 処理系をビルドして bin/ に置く
+        run: make -C src install
+
+      - name: 処理系だけで例題を回す
+        run: make -C src test
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, xml, tokenizer, ctype, fileinfo, openssl
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - name: .env を用意する
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: アプリのテスト
+        run: php artisan test

@@ -13,7 +13,9 @@ ParRwhile.mli: ParRwhile.mly
 	ocamlyacc ParRwhile.mly
 
 BNFC_Util.ml: Rwhile.cf
-	bnfc -ocaml Rwhile.cf
+# bnfc(Haskell) はロケール既定の文字符号化で .cf を読む。LANG が C の環境
+# （コンテナ・CI・cron）だと Rwhile.cf の UTF-8 で落ちるので、明示する。
+	LC_ALL=C.UTF-8 bnfc -ocaml Rwhile.cf
 	touch BNFC_Util.ml
 
 clean:
@@ -24,29 +26,30 @@ distclean: clean
 	 	ri
 
 install: ri
-	cp -f ./ri ../public/
+	mkdir -p ../bin
+	cp -f ./ri ../bin/
 
 test: ri
-	./ri ../examples/rep.rwhile ../examples/list123.val
-	./ri -inverse ../examples/ri.rwhile
-	./ri -exp ../examples/ri.rwhile
-	./ri -p2d ../examples/reverse.rwhile
-	./ri ../examples/ri.rwhile ../examples/id_and_nil.p_val
-	./ri ../examples/ri.rwhile ../examples/reverse_and_list123.p_val
-	./ri ../examples/ri.rwhile ../examples/piorder.p_val
-	# ./ri ../examples/ri.rwhile ../examples/ri_reverse_list123.p_val    # 6.6s かかった
-	# ./ri ../examples/ri.rwhile ../examples/ri_piorder_atree.p_val      # 1分以上かかるかも
-	# ./ri ../examples/ri.rwhile ../examples/ri_ri_reverse_list123.p_val # 1:31:39.23もかかった
-	./ri ../examples/enumeration.rwhile ../examples/nil.val
-	./ri ../examples/length.rwhile ../examples/list123.val
-	# ./ri ../examples/perm_to_code.rwhile ../examples/perm_to_code.val  # failed?
-	./ri ../examples/compare.rwhile ../examples/compare0.val
-	./ri ../examples/minus.rwhile ../examples/minus.val
-	./ri ../examples/rle.rwhile ../examples/rle0.val
-	./ri ../examples/rle.rwhile ../examples/rle1.val
-	./ri ../examples/rle.rwhile ../examples/rle2.val
-	./ri ../examples/rle.rwhile ../examples/rle3.val
-	./ri ../examples/rle.rwhile ../examples/rle4.val
-	#./ri ../examples/infinite.rwhile ../examples/nil.val   #停止しない例
-	./ri ../examples/lookup_ppl2015.rwhile ../examples/nil.val
-	./ri ../examples/lookup.rwhile ../examples/nil.val
+	./ri ../public/examples/rep.rwhile ../public/examples/list123.val
+	./ri -inverse ../public/examples/ri.rwhile
+	./ri -exp ../public/examples/ri.rwhile
+	./ri -p2d ../public/examples/reverse.rwhile
+	./ri ../public/examples/ri.rwhile ../public/examples/id_and_nil.p_val
+	./ri ../public/examples/ri.rwhile ../public/examples/reverse_and_list123.p_val
+	./ri ../public/examples/ri.rwhile ../public/examples/piorder.p_val
+	# ./ri ../public/examples/ri.rwhile ../public/examples/ri_reverse_list123.p_val    # 6.6s かかった
+	# ./ri ../public/examples/ri.rwhile ../public/examples/ri_piorder_atree.p_val      # 1分以上かかるかも
+	# ./ri ../public/examples/ri.rwhile ../public/examples/ri_ri_reverse_list123.p_val # 1:31:39.23もかかった
+	./ri ../public/examples/enumeration.rwhile ../public/examples/nil.val
+	./ri ../public/examples/length.rwhile ../public/examples/list123.val
+	# ./ri ../public/examples/perm_to_code.rwhile ../public/examples/perm_to_code.val  # failed?
+	./ri ../public/examples/compare.rwhile ../public/examples/compare0.val
+	./ri ../public/examples/minus.rwhile ../public/examples/minus.val
+	./ri ../public/examples/rle.rwhile ../public/examples/rle0.val
+	./ri ../public/examples/rle.rwhile ../public/examples/rle1.val
+	./ri ../public/examples/rle.rwhile ../public/examples/rle2.val
+	./ri ../public/examples/rle.rwhile ../public/examples/rle3.val
+	./ri ../public/examples/rle.rwhile ../public/examples/rle4.val
+	#./ri ../public/examples/infinite.rwhile ../public/examples/nil.val   #停止しない例
+	./ri ../public/examples/lookup_ppl2015.rwhile ../public/examples/nil.val
+	./ri ../public/examples/lookup.rwhile ../public/examples/nil.val

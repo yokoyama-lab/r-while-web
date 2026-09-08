@@ -1,101 +1,94 @@
-# RWHILE-Online-Interpreter
-R-WHILEのオンラインインタプリタ  
+# r-while-web — R-WHILE Playground
 
-## Requirements
-+ php
-+ composer(Laravel)
-+ OCaml
-+ Ocamlfind
-+ Ocamlyacc
-+ extlib
-+ The BNF Converter: http://bnfc.digitalgrammars.com/
+可逆プログラミング言語 **R-WHILE** のオンラインインタプリタ。ブラウザ上で
+R-WHILE のプログラムを書き、実行・逆転（inversion）・program2data 変換・
+マクロ展開ができる。横山研究室の学生が作成した。
 
-## Linux Ubuntu にてインストール例
-+ 本アプリケーションをダウンロード
+処理系の本体は `src/`（OCaml + [BNFC](https://bnfc.digitalgrammars.com/)）にあり、
+Web 側は Laravel（PHP）でその実行を仲介するだけである。
+
+## 必要なもの
+
+| | 版 |
+|---|---|
+| PHP | 8.3 以上（`mbstring` `dom` `xml` `tokenizer` `ctype` `fileinfo` `openssl`） |
+| Composer | 2 系 |
+| OCaml | 4.14 以上（5.3 で動作確認済み） |
+| ocamlfind, extlib | — |
+| BNFC | 2.9 系 |
+
+Ubuntu なら次で揃う。
+
+```sh
+sudo apt install php-cli php-mbstring php-xml composer ocaml ocaml-findlib libextlib-ocaml-dev bnfc
 ```
+
+## 導入
+
+```sh
 git clone https://github.com/yokoyama-lab/r-while-web.git
-```
+cd r-while-web
 
-+ composerをインストール(Laravelに必要)
-```
-curl -sS https://getcomposer.org/installer | php
-cd RWHILE-Online-Interpreter
-./composer.phar install
-```
-
-+ OCamlをインストール
-```
-sudo apt update
-sudo apt install opam
-opam init
-opam update
-opam switch
-opam install extlib ocamlfind
-```
-
-+ RWHILE-Online-Interpreterディレクトリ内に.envファイルを作成する
-```
+composer install
 cp .env.example .env
-```
-<!--
-+ .envファイルを各環境のデータベースの設定に合わせて書き換える
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=homestead
-DB_USERNAME=homestead
-DB_PASSWORD=secret
-```
-
-（例）sqlite3の場合  
-```
-DB_CONNECTION=sqlite
-```
-に変更し上記以外の項目は削除する
-
-```
-touch database/database.sqlite
-php artisan migrate
-```
--->
-+ アプリケーションキーを設定
-```
 php artisan key:generate
-php artisan config:clear
-```
 
-+ ディレクトリsrcに移動しコンパイルする
-```
-cd src
-make install
-```
+# R-WHILE の処理系を作り、bin/ri に置く
+make -C src install
 
-+ 以下のコマンドでローカルサーバを起動できる
-```
 php artisan serve
 ```
 
-## 注意点
-+ 本番環境にデプロイする場合は，laravelの設定を本番環境用に変更する
+`http://127.0.0.1:8000/` が Playground。
 
-+ パーミッションが必要なディレクトリ下で本アプリケーションを使用する場合，ディレクトリpublicの中の data, programs に書き込みできるようにする．
-```
-chmod 777 data
-chmod 777 programs
+> `bin/ri` が無いと実行ボタンは 503 を返す。処理系のビルドは必須である。
+
+## テスト
+
+```sh
+make -C src test   # 処理系だけで例題を回す
+php artisan test   # Web 側（画面・実行・入力検証・後始末）
 ```
 
-+ 新しいバージョンのOCamlを使用する場合は，Makefile中の
-```
-OCAMLC=ocamlfind ocamlc -g -package extlib -linkpkg
-```
-を
-```
-OCAMLC=ocamlfind ocamlc -unsafe-string -g -package extlib -linkpkg
-```
-に変更する必要がある
+`bin/ri` が無い状態では実行系のテストは **skip** される（合格ではない）。
+CI（`.github/workflows/ci.yml`）は処理系を必ずビルドしてから走らせている。
 
-+ ./composer.phar installでエラーが出た場合は以下のコマンドで解決する可能性がある  
+## 構成
+
 ```
-sudo apt-get install php-gd php-xml php[使用しているphpのバージョン]-mbstring
+app/Http/Controllers/RWHILEController.php  画面とリクエストの処理（このアプリの実質すべて）
+config/rwhile.php                          処理系の場所・実行時間の上限・入力の上限
+resources/views/index.blade.php            Playground の画面（Ace エディタ）
+public/examples/                           Sample ドロップダウンが読む例題 53 本
+src/                                       R-WHILE 処理系（OCaml）
+bin/ri                                     make install が置く実行ファイル（git 管理外）
 ```
+
+## 設定
+
+`.env` で変えられるもの:
+
+| キー | 既定 | 意味 |
+|---|---|---|
+| `RWHILE_RI_BIN` | `bin/ri` | 処理系の実行ファイル |
+| `RWHILE_TIMEOUT` | `10` | 1 回の実行に許す秒数 |
+| `RWHILE_MAX_INPUT_BYTES` | `262144` | 受け付けるソース・データの最大バイト数 |
+
+このアプリはデータベースを使わない。セッションとキャッシュはファイルに置く
+（`SESSION_DRIVER=file` / `CACHE_STORE=file`）。
+
+## 本番へ出すとき
+
+- **`APP_DEBUG=false` と `APP_ENV=production`。** `.env.example` の既定もそうしてある。
+  デバッグ表示を有効にしたまま公開すると、Laravel の例外画面から環境変数まで読める。
+- `php artisan config:cache` は `.env` を読み込み済みの状態で行う。
+- 書き込みが要るのは `storage/` と `bootstrap/cache/` だけ。**`public/` 配下に
+  書き込み権限は要らない**（利用者の投稿は `storage/app/rwhile/` に一時ファイルとして
+  置き、実行後に消す）。
+
+## 補足
+
+- R-WHILE は停止しないプログラムを書ける。`public/examples/infinite.rwhile` は
+  意図的な非停止例で、`RWHILE_TIMEOUT` で打ち切られる。
+- OCaml 5 では `-unsafe-string` は**廃止**されている。無指定のままビルドできる
+  （旧 README にあった「新しい OCaml では `-unsafe-string` を足す」という記述は誤り）。
