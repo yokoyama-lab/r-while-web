@@ -73,6 +73,19 @@ bin/ri                                     make install が置く実行ファイ
 | `RWHILE_RI_BIN` | `bin/ri` | 処理系の実行ファイル |
 | `RWHILE_TIMEOUT` | `10` | 1 回の実行に許す秒数 |
 | `RWHILE_MAX_INPUT_BYTES` | `262144` | 受け付けるソース・データの最大バイト数 |
+| `RWHILE_MEMORY_LIMIT_MB` | `128` | 1 回の実行に許すメモリ（`RLIMIT_DATA`, `prlimit` 経由） |
+| `RWHILE_MAX_CONCURRENT` | `3` | 同時に走らせる実行の本数 |
+| `RWHILE_PRLIMIT_BIN` | `/usr/bin/prlimit` | 上限を掛ける道具。無ければ上限なしで走る |
+
+R-WHILE では**止まらないうえに際限なくメモリを確保し続ける**プログラムが書ける。
+同梱の `examples/infinite.rwhile`（Sample メニューの 7 番）がまさにそれで、
+10 秒で 192MB まで伸びる（2026-09-08 実測）。したがって時間制限だけでは足りず、
+**メモリと同時実行数の両方に蓋をしている**。最悪でも
+`RWHILE_MEMORY_LIMIT_MB × RWHILE_MAX_CONCURRENT` しか使わない。
+
+上限は `RLIMIT_AS` ではなく `RLIMIT_DATA` で掛ける。`RLIMIT_AS` だと OCaml
+ランタイムが予約する仮想アドレス空間まで数えてしまい、256MB では正常な例題すら
+通らなかった。
 
 このアプリはデータベースを使わない。セッションとキャッシュはファイルに置く
 （`SESSION_DRIVER=file` / `CACHE_STORE=file`）。

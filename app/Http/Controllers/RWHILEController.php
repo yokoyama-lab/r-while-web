@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\Process\Exception\ProcessSignaledException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
 
@@ -93,12 +95,26 @@ class RWHILEController extends Controller
         if ($dataPath !== null) {
             $command[] = $dataPath;
         }
+        $command = $this->withResourceLimits($command);
 
         // ri は標準入力を読まない（src/Main.ml は引数のファイルだけを開く）。
         // Laravel 6 版はプログラム本文を標準入力にも書いており、64KB を超えると
         // パイプが埋まって詰まる状態だった。入力は渡さない。
         $timeout = config('rwhile.timeout');
         $process = new Process($command, sys_get_temp_dir(), [], null, $timeout);
+
+        $lock = $this->acquireSlot($timeout);
+        if ($lock === null) {
+            @unlink($programPath);
+            if ($dataPath !== null) {
+                @unlink($dataPath);
+            }
+
+            return response()->json(
+                ['output' => "The playground is busy right now. Please try again in a few seconds.\n"],
+                503
+            );
+        }
 
         try {
             $process->run();
@@ -114,7 +130,14 @@ class RWHILEController extends Controller
             }
         } catch (ProcessTimedOutException) {
             $output = "Execution timed out!\n";
+        } catch (ProcessSignaledException $e) {
+            // メモリ上限に当たると ri は SIGABRT で落ちる。Symfony Process は
+            // シグナル終了を例外にするので、ここで受けないと 500 になる。
+            $output = $e->getSignal() === 6
+                ? "Out of memory! The program allocated more than the playground allows.\n"
+                : "Execution was stopped by the server (signal {$e->getSignal()}).\n";
         } finally {
+            $lock->release();
             @unlink($programPath);
             if ($dataPath !== null) {
                 @unlink($dataPath);
@@ -125,6 +148,49 @@ class RWHILEController extends Controller
         $output = str_replace([storage_path(), base_path()], '', $output);
 
         return response()->json(['output' => $output]);
+    }
+
+    /**
+     * 実行 1 回あたりの資源に蓋をする。R-WHILE は「止まらないうえに際限なく
+     * 確保し続ける」プログラムを書けるので、時間制限だけでは足りない
+     * （同梱の examples/infinite.rwhile は 10 秒で 192MB まで伸びる）。
+     *
+     * @param  list<string>  $command
+     * @return list<string>
+     */
+    private function withResourceLimits(array $command): array
+    {
+        $mb = (int) config('rwhile.memory_limit_mb');
+        $prlimit = config('rwhile.prlimit_bin');
+
+        if ($mb <= 0 || ! is_string($prlimit) || ! is_executable($prlimit)) {
+            return $command;
+        }
+
+        // RLIMIT_AS ではなく RLIMIT_DATA。AS だと OCaml ランタイムが予約する
+        // 仮想アドレス空間まで数え、正常な例題まで落ちる。
+        return array_merge(
+            [$prlimit, '--data='.($mb * 1024 * 1024), '--core=0', '--'],
+            $command
+        );
+    }
+
+    /**
+     * サーバ全体で同時に走る実行の本数に蓋をする。throttle は 1 つの相手の
+     * 毎分の回数しか抑えないので、相手が増えると重なりは止まらない。
+     */
+    private function acquireSlot(int $timeout): ?\Illuminate\Contracts\Cache\Lock
+    {
+        $slots = max(1, (int) config('rwhile.max_concurrent'));
+
+        for ($i = 0; $i < $slots; $i++) {
+            $lock = Cache::lock("rwhile-exec-$i", $timeout + 5);
+            if ($lock->get()) {
+                return $lock;
+            }
+        }
+
+        return null;
     }
 
     private function readExample(string $filename): string

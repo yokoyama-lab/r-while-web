@@ -102,4 +102,80 @@ class ExecuteTest extends TestCase
             'data' => 'nil',
         ])->assertStatus(422)->assertJsonValidationErrors('prog');
     }
+
+    public function test_the_interpreter_runs_under_a_memory_limit(): void
+    {
+        $prlimit = config('rwhile.prlimit_bin');
+
+        if (! is_executable($prlimit)) {
+            $this->markTestSkipped('prlimit が無い環境');
+        }
+
+        $controller = new \App\Http\Controllers\RWHILEController;
+        $method = (new \ReflectionClass($controller))->getMethod('withResourceLimits');
+        $command = $method->invoke($controller, ['/bin/ri', 'prog']);
+
+        $this->assertSame($prlimit, $command[0]);
+        $this->assertContains('--data='.(config('rwhile.memory_limit_mb') * 1024 * 1024), $command);
+        $this->assertContains('--core=0', $command);
+        $this->assertSame(['/bin/ri', 'prog'], array_slice($command, -2));
+    }
+
+    public function test_a_program_that_allocates_without_bound_is_cut_off(): void
+    {
+        if (! is_executable(config('rwhile.prlimit_bin'))) {
+            $this->markTestSkipped('prlimit が無い環境');
+        }
+
+        // examples/infinite.rwhile は止まらないうえに確保し続ける（実測で 10 秒 192MB）。
+        // 上限を小さくすれば、時間切れを待たずに落ちるはずである。
+        config(['rwhile.memory_limit_mb' => 16, 'rwhile.timeout' => 20]);
+
+        $started = microtime(true);
+        $response = $this->postJson('/execute', [
+            'prog' => $this->program('infinite.rwhile'),
+            'data' => $this->program('nil.val'),
+        ])->assertOk();
+        $elapsed = microtime(true) - $started;
+
+        $this->assertLessThan(20, $elapsed, '時間切れではなくメモリ上限で落ちること');
+        $this->assertStringContainsString('Out of memory', $response->json('output'));
+        $this->assertStringNotContainsString(storage_path(), $response->json('output'));
+    }
+
+    public function test_it_refuses_when_every_execution_slot_is_taken(): void
+    {
+        $slots = (int) config('rwhile.max_concurrent');
+
+        $held = [];
+        for ($i = 0; $i < $slots; $i++) {
+            $lock = \Illuminate\Support\Facades\Cache::lock("rwhile-exec-$i", 30);
+            $this->assertTrue($lock->get(), "slot $i を掴めること");
+            $held[] = $lock;
+        }
+
+        try {
+            $this->postJson('/execute', [
+                'prog' => $this->program('reverse.rwhile'),
+                'data' => $this->program('list123.val'),
+            ])->assertStatus(503);
+        } finally {
+            foreach ($held as $lock) {
+                $lock->release();
+            }
+        }
+    }
+
+    public function test_it_frees_its_slot_after_a_normal_run(): void
+    {
+        $this->postJson('/execute', [
+            'prog' => $this->program('reverse.rwhile'),
+            'data' => $this->program('list123.val'),
+        ])->assertOk();
+
+        // 解放されていなければ 2 回目以降が詰まる。
+        $lock = \Illuminate\Support\Facades\Cache::lock('rwhile-exec-0', 5);
+        $this->assertTrue($lock->get(), '実行後にスロットが解放されていること');
+        $lock->release();
+    }
 }
